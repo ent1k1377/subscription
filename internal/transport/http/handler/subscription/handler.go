@@ -87,3 +87,20 @@ func (h *Handler) UpdateSubscription(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("updated the subscription"))
 }
+
+func (h *Handler) DeleteSubscription(ctx *gin.Context) {
+	uuidParam := ctx.Param("uuid")
+	uuidParse, err := uuid.Parse(uuidParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
+		return
+	}
+
+	err = h.subscriptionService.DeleteSubscription(uuidParse)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to delete the subscription"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("deleted the subscription"))
+}

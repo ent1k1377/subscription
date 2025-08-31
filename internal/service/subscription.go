@@ -40,3 +40,7 @@ func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, er
 func (s *Subscription) UpdateSubscription(uuid uuid.UUID, params *domain.UpdateSubscriptionParams) error {
 	return s.subscriptionRepo.UpdateSubscription(uuid, params)
 }
+
+func (s *Subscription) DeleteSubscription(uuid uuid.UUID) error {
+	return s.subscriptionRepo.DeleteSubscription(uuid)
+}

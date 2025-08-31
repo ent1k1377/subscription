@@ -64,3 +64,14 @@ func (s *Subscription) UpdateSubscription(uuid uuid.UUID, params *domain.UpdateS
 
 	return nil
 }
+
+func (s *Subscription) DeleteSubscription(uuid uuid.UUID) error {
+	ctx := context.Background()
+	query := `DELETE FROM subscriptions WHERE id = $1`
+	_, err := s.pool.Exec(ctx, query, uuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
