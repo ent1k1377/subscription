@@ -63,3 +63,27 @@ func (h *Handler) GetSubscription(ctx *gin.Context) {
 	response := ToGetSubscriptionResponse(subscription)
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (h *Handler) UpdateSubscription(ctx *gin.Context) {
+	uuidParam := ctx.Param("uuid")
+	uuidParse, err := uuid.Parse(uuidParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
+		return
+	}
+
+	var request UpdateSubscriptionRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
+		return
+	}
+
+	params := ToUpdateSubscriptionParams(&request)
+	err = h.subscriptionService.UpdateSubscription(uuidParse, params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to update the subscription"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("updated the subscription"))
+}

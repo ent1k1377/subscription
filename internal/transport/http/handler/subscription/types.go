@@ -39,6 +39,13 @@ type GetSubscriptionResponse struct {
 	ID          string     `json:"id"`
 	ServiceName string     `json:"service_name"`
 	Price       int        `json:"price"`
+	UserID      string     `json:"user_id"`
 	StartDate   MonthYear  `json:"start_date"`
 	EndDate     *MonthYear `json:"end_date"`
+}
+
+type UpdateSubscriptionRequest struct {
+	ServiceName string     `json:"service_name"`
+	Price       int        `json:"price"`
+	EndDate     *MonthYear `json:"end_date,omitempty"`
 }

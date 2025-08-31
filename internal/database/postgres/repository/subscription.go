@@ -53,3 +53,14 @@ func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, er
 
 	return &subscription, nil
 }
+
+func (s *Subscription) UpdateSubscription(uuid uuid.UUID, params *domain.UpdateSubscriptionParams) error {
+	ctx := context.Background()
+	query := `UPDATE subscriptions SET service_name=$1, price=$2, end_date=$3 WHERE id = $4`
+	_, err := s.pool.Exec(ctx, query, params.ServiceName, params.Price, params.EndDate, uuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

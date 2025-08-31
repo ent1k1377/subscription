@@ -24,3 +24,9 @@ type CreateSubscriptionParams struct {
 	StartDate   time.Time
 	EndDate     *time.Time
 }
+
+type UpdateSubscriptionParams struct {
+	ServiceName string
+	Price       int
+	EndDate     *time.Time
+}

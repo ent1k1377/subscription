@@ -41,7 +41,22 @@ func ToGetSubscriptionResponse(subscription *domain.Subscription) *GetSubscripti
 		ID:          subscription.UUID.String(),
 		ServiceName: subscription.ServiceName,
 		Price:       subscription.Price,
+		UserID:      subscription.UserUUID.String(),
 		StartDate:   startDate,
+		EndDate:     endDate,
+	}
+}
+
+func ToUpdateSubscriptionParams(request *UpdateSubscriptionRequest) *domain.UpdateSubscriptionParams {
+	var endDate *time.Time
+	if request.EndDate != nil {
+		endTime := time.Time(*request.EndDate)
+		endDate = &endTime
+	}
+
+	return &domain.UpdateSubscriptionParams{
+		ServiceName: request.ServiceName,
+		Price:       request.Price,
 		EndDate:     endDate,
 	}
 }

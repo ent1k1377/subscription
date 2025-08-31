@@ -43,7 +43,7 @@ func (s *Server) SetRoutes() {
 	{
 		api.POST("/create", s.subscriptionHandler.Create)
 		api.GET("/:uuid", s.subscriptionHandler.GetSubscription)
-		api.PUT("/:uuid", nil)
+		api.PUT("/:uuid", s.subscriptionHandler.UpdateSubscription)
 		api.DELETE("/:uuid", nil)
 		api.GET("/list", nil)
 	}

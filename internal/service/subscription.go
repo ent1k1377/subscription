@@ -36,3 +36,7 @@ func (s *Subscription) CreateSubscription(params *domain.CreateSubscriptionParam
 func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, error) {
 	return s.subscriptionRepo.GetSubscription(uuid)
 }
+
+func (s *Subscription) UpdateSubscription(uuid uuid.UUID, params *domain.UpdateSubscriptionParams) error {
+	return s.subscriptionRepo.UpdateSubscription(uuid, params)
+}
