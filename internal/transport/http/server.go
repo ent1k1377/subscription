@@ -45,6 +45,6 @@ func (s *Server) SetRoutes() {
 		api.GET("/:uuid", s.subscriptionHandler.GetSubscription)
 		api.PUT("/:uuid", s.subscriptionHandler.UpdateSubscription)
 		api.DELETE("/:uuid", s.subscriptionHandler.DeleteSubscription)
-		api.GET("/list", nil)
+		api.GET("/list", s.subscriptionHandler.ListSubscriptions)
 	}
 }

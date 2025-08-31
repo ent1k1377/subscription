@@ -104,3 +104,21 @@ func (h *Handler) DeleteSubscription(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("deleted the subscription"))
 }
+
+func (h *Handler) ListSubscriptions(ctx *gin.Context) {
+	var request ListSubscriptionRequest
+	if err := ctx.ShouldBindQuery(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("query line is not valid"))
+		return
+	}
+
+	params, err := ToListSubscriptionParams(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("query is not valid"))
+		return
+	}
+
+	h.subscriptionService.ListSubscriptions(params)
+
+	ctx.JSON(200, common.ToSuccessfulResponse("list the subscription"))
+}

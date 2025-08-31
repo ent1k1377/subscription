@@ -30,3 +30,10 @@ type UpdateSubscriptionParams struct {
 	Price       int
 	EndDate     *time.Time
 }
+
+type ListSubscriptionParams struct {
+	ServiceName string
+	UserID      uuid.UUID
+	Page        int
+	Limit       int
+}

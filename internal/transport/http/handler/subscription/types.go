@@ -49,3 +49,10 @@ type UpdateSubscriptionRequest struct {
 	Price       int        `json:"price"`
 	EndDate     *MonthYear `json:"end_date,omitempty"`
 }
+
+type ListSubscriptionRequest struct {
+	ServiceName string `form:"service_name"`
+	UserID      string `form:"user_id"`
+	Page        int    `form:"page"`
+	Limit       int    `form:"limit"`
+}

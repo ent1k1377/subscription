@@ -75,3 +75,9 @@ func (s *Subscription) DeleteSubscription(uuid uuid.UUID) error {
 
 	return nil
 }
+
+func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) {
+	// TODO мб какая то валидация params
+	// TODO формируем динамический запрос к бд с зависимоти от params
+	// TODO запускаем и считываем все записи и возвращаем их
+}

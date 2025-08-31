@@ -60,3 +60,17 @@ func ToUpdateSubscriptionParams(request *UpdateSubscriptionRequest) *domain.Upda
 		EndDate:     endDate,
 	}
 }
+
+func ToListSubscriptionParams(request *ListSubscriptionRequest) (*domain.ListSubscriptionParams, error) {
+	userID, err := uuid.Parse(request.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.ListSubscriptionParams{
+		ServiceName: request.ServiceName,
+		UserID:      userID,
+		Page:        request.Page,
+		Limit:       request.Limit,
+	}, nil
+}
