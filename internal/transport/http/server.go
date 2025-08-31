@@ -2,9 +2,10 @@ package http
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"subscriptions/internal/transport/http/handler/subscription"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -19,7 +20,7 @@ func NewServer(subscriptionHandler *subscription.Handler) *Server {
 		Addr:    ":8080", // TODO Добавить Config
 		Handler: engine,
 	}
-	
+
 	return &Server{
 		httpServer:          httpServer,
 		engine:              engine,
@@ -29,7 +30,7 @@ func NewServer(subscriptionHandler *subscription.Handler) *Server {
 
 func (s *Server) Start() error {
 	s.SetRoutes()
-	
+
 	return s.httpServer.ListenAndServe()
 }
 
@@ -41,7 +42,7 @@ func (s *Server) SetRoutes() {
 	api := s.engine.Group("/api/subscriptions")
 	{
 		api.POST("/create", s.subscriptionHandler.Create)
-		api.GET("/:uuid", nil)
+		api.GET("/:uuid", s.subscriptionHandler.GetSubscription)
 		api.PUT("/:uuid", nil)
 		api.DELETE("/:uuid", nil)
 		api.GET("/list", nil)

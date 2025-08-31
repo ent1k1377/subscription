@@ -1,10 +1,12 @@
 package subscription
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"subscriptions/internal/service"
 	"subscriptions/internal/transport/http/common"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -23,23 +25,41 @@ func (h *Handler) Create(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
 		return
 	}
-	
+
 	if err := ValidateCreateSubscriptionRequest(request); err != nil {
 		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse(err.Error()))
 		return
 	}
-	
+
 	params, err := ToCreateSubscriptionParams(&request)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("subscription is not valid")) // TODO поменять ошибку
 		return
 	}
-	
+
 	err = h.subscriptionService.CreateSubscription(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to create the subscription"))
 		return
 	}
-	
+
 	ctx.JSON(http.StatusCreated, common.ToSuccessfulResponse("created the subscription"))
+}
+
+func (h *Handler) GetSubscription(ctx *gin.Context) {
+	uuidParam := ctx.Param("uuid")
+	uuidParse, err := uuid.Parse(uuidParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuidParse is not valid"))
+		return
+	}
+
+	subscription, err := h.subscriptionService.GetSubscription(uuidParse)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the subscription"))
+		return
+	}
+
+	response := ToGetSubscriptionResponse(subscription)
+	ctx.JSON(http.StatusOK, response)
 }

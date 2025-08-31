@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -26,22 +27,22 @@ func (e *ValidationError) HasErrors() bool {
 
 func ValidateCreateSubscriptionRequest(req CreateSubscriptionRequest) error {
 	var vErr ValidationError
-	
+
 	if req.ServiceName == "" {
 		vErr.Add("service_name", "required")
 	}
 	if req.Price < 0 {
 		vErr.Add("price", "must be greater than or equal to zero")
 	}
-	
-	_, err := uuid.Parse(req.UserUUID)
+
+	_, err := uuid.Parse(req.UserID)
 	if err != nil {
 		vErr.Add("user_id", "must be a valid UUID")
 	}
-	
+
 	if vErr.HasErrors() {
 		return err
 	}
-	
+
 	return nil
 }

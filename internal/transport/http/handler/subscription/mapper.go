@@ -1,24 +1,25 @@
 package subscription
 
 import (
-	"github.com/google/uuid"
 	"subscriptions/internal/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func ToCreateSubscriptionParams(request *CreateSubscriptionRequest) (*domain.CreateSubscriptionParams, error) {
-	uuidParse, err := uuid.Parse(request.UserUUID)
+	uuidParse, err := uuid.Parse(request.UserID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	startDate := time.Time(request.StartDate)
 	var endDate *time.Time
 	if request.EndDate != nil {
 		endTime := time.Time(*request.EndDate)
 		endDate = &endTime
 	}
-	
+
 	return &domain.CreateSubscriptionParams{
 		ServiceName: request.ServiceName,
 		Price:       request.Price,
@@ -26,4 +27,21 @@ func ToCreateSubscriptionParams(request *CreateSubscriptionRequest) (*domain.Cre
 		StartDate:   startDate,
 		EndDate:     endDate,
 	}, nil
+}
+
+func ToGetSubscriptionResponse(subscription *domain.Subscription) *GetSubscriptionResponse {
+	startDate := MonthYear(subscription.StartDate)
+	var endDate *MonthYear
+	if subscription.EndDate != nil {
+		endTime := MonthYear(*subscription.EndDate)
+		endDate = &endTime
+	}
+
+	return &GetSubscriptionResponse{
+		ID:          subscription.UUID.String(),
+		ServiceName: subscription.ServiceName,
+		Price:       subscription.Price,
+		StartDate:   startDate,
+		EndDate:     endDate,
+	}
 }

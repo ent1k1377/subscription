@@ -1,10 +1,11 @@
 package service
 
 import (
-	"github.com/google/uuid"
 	"subscriptions/internal/database/postgres/repository"
 	"subscriptions/internal/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Subscription struct {
@@ -28,6 +29,10 @@ func (s *Subscription) CreateSubscription(params *domain.CreateSubscriptionParam
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	
+
 	return s.subscriptionRepo.CreateSubscription(subscription)
+}
+
+func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, error) {
+	return s.subscriptionRepo.GetSubscription(uuid)
 }

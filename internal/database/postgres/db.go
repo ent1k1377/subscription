@@ -20,11 +20,11 @@ func GetConnection() (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if err = pool.Ping(ctx); err != nil {
 		return nil, err
 	}
-	
+
 	return pool, nil
 }
 

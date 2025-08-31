@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"subscriptions/internal/domain"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Subscription struct {
@@ -25,10 +27,29 @@ func (s *Subscription) CreateSubscription(subscription *domain.Subscription) err
 		subscription.StartDate,
 		subscription.EndDate,
 	)
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
+}
+
+func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, error) {
+	ctx := context.Background()
+	var subscription domain.Subscription
+	query := `SELECT id, service_name, price, user_id, start_date, end_date FROM subscriptions WHERE id = $1`
+	err := s.pool.QueryRow(ctx, query, uuid).Scan(
+		&subscription.UUID,
+		&subscription.ServiceName,
+		&subscription.Price,
+		&subscription.UserUUID,
+		&subscription.StartDate,
+		&subscription.EndDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &subscription, nil
 }
