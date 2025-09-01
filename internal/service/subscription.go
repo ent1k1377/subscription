@@ -48,3 +48,7 @@ func (s *Subscription) DeleteSubscription(uuid uuid.UUID) error {
 func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) ([]*domain.Subscription, error) {
 	return s.subscriptionRepo.ListSubscriptions(params)
 }
+
+func (s *Subscription) TotalCostSubscriptions(params *domain.TotalCostSubscriptionsParams) (int, error) {
+	return s.subscriptionRepo.TotalCostSubscriptions(params)
+}

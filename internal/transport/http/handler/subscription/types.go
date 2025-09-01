@@ -61,3 +61,10 @@ type ListSubscriptionRequest struct {
 type ListSubscriptionResponse struct {
 	Subscriptions []*domain.Subscription `json:"subscriptions"`
 }
+
+type TotalCostSubscriptionsRequest struct {
+	ServiceName *string   `json:"service_name"`
+	UserID      *string   `json:"user_id"`
+	StartDate   MonthYear `json:"start_date"`
+	EndDate     MonthYear `json:"end_date"`
+}

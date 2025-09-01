@@ -84,3 +84,27 @@ func ToListSubscriptionResponse(subscriptions []*domain.Subscription) *ListSubsc
 		Subscriptions: subscriptions,
 	}
 }
+
+func ToTotalCostSubscriptionsParams(request *TotalCostSubscriptionsRequest) *domain.TotalCostSubscriptionsParams {
+	var serviceName *string
+	if request.ServiceName != nil {
+		serviceName = request.ServiceName
+	}
+
+	var userID *uuid.UUID
+	if request.UserID != nil {
+		id, err := uuid.Parse(*request.UserID)
+		if err != nil {
+			return nil
+		}
+
+		userID = &id
+	}
+
+	return &domain.TotalCostSubscriptionsParams{
+		ServiceName: serviceName,
+		UserID:      userID,
+		StartDate:   time.Time(request.StartDate),
+		EndDate:     time.Time(request.EndDate),
+	}
+}

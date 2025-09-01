@@ -87,7 +87,7 @@ func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) 
 	}
 	defer tx.Rollback(ctx)
 
-	query, args := s.buildQuery(params)
+	query, args := s.buildListSubscriptionsQuery(params)
 	fmt.Println(query)
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) 
 	return subscriptions, nil
 }
 
-func (s *Subscription) buildQuery(params *domain.ListSubscriptionParams) (string, []any) {
+func (s *Subscription) buildListSubscriptionsQuery(params *domain.ListSubscriptionParams) (string, []any) {
 	var conditions []string
 	var args []any
 	pos := 1
@@ -145,6 +145,53 @@ func (s *Subscription) buildQuery(params *domain.ListSubscriptionParams) (string
 
 	query += " LIMIT $" + strconv.Itoa(pos) + " OFFSET $" + strconv.Itoa(pos+1)
 	args = append(args, params.Page, params.Limit)
+
+	return query, args
+}
+
+func (s *Subscription) TotalCostSubscriptions(params *domain.TotalCostSubscriptionsParams) (int, error) {
+	ctx := context.Background()
+	var totalCost int
+	fmt.Println(params)
+	query, args := s.buildTotalCostSubscriptionsQuery(params)
+	fmt.Println(query)
+	err := s.pool.QueryRow(ctx, query, args...).Scan(&totalCost)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalCost, nil
+}
+
+func (s *Subscription) buildTotalCostSubscriptionsQuery(params *domain.TotalCostSubscriptionsParams) (string, []any) {
+	var conditions []string
+	var args []any
+	pos := 1
+
+	if params.ServiceName != nil && *params.ServiceName != "" {
+		conditions = append(conditions, "service_name = $"+strconv.Itoa(pos))
+		args = append(args, *params.ServiceName)
+		pos++
+	}
+
+	if params.UserID != nil {
+		conditions = append(conditions, "user_id = $"+strconv.Itoa(pos))
+		args = append(args, *params.UserID)
+		pos++
+	}
+
+	conditions = append(conditions, "start_date >= $"+strconv.Itoa(pos))
+	args = append(args, params.StartDate)
+	pos++
+
+	conditions = append(conditions, "(end_date IS NULL OR end_date <= $"+strconv.Itoa(pos)+")")
+	args = append(args, params.EndDate)
+	pos++
+
+	query := `SELECT COALESCE(SUM(price), 0) FROM subscriptions WHERE `
+	if len(conditions) > 0 {
+		query += strings.Join(conditions, " AND ")
+	}
 
 	return query, args
 }

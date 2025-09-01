@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"fmt"
 	"net/http"
 	"subscriptions/internal/service"
 	"subscriptions/internal/transport/http/common"
@@ -125,4 +126,23 @@ func (h *Handler) ListSubscriptions(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, ToListSubscriptionResponse(subscription))
+}
+
+func (h *Handler) TotalCostSubscriptions(ctx *gin.Context) {
+	var request TotalCostSubscriptionsRequest
+	if err := ctx.ShouldBindBodyWithJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
+		return
+	}
+
+	fmt.Println(request)
+	params := ToTotalCostSubscriptionsParams(&request)
+	sum, err := h.subscriptionService.TotalCostSubscriptions(params)
+	if err != nil {
+		fmt.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the total cost subscriptions"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"total": sum})
 }

@@ -37,3 +37,10 @@ type ListSubscriptionParams struct {
 	Page        int
 	Limit       int
 }
+
+type TotalCostSubscriptionsParams struct {
+	ServiceName *string
+	UserID      *uuid.UUID
+	StartDate   time.Time
+	EndDate     time.Time
+}
