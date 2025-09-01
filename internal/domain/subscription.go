@@ -32,8 +32,8 @@ type UpdateSubscriptionParams struct {
 }
 
 type ListSubscriptionParams struct {
-	ServiceName string
-	UserID      uuid.UUID
+	ServiceName *string
+	UserID      *uuid.UUID
 	Page        int
 	Limit       int
 }

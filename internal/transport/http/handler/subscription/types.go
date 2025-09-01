@@ -3,6 +3,7 @@ package subscription
 import (
 	"encoding/json"
 	"strings"
+	"subscriptions/internal/domain"
 	"time"
 )
 
@@ -51,8 +52,12 @@ type UpdateSubscriptionRequest struct {
 }
 
 type ListSubscriptionRequest struct {
-	ServiceName string `form:"service_name"`
-	UserID      string `form:"user_id"`
-	Page        int    `form:"page"`
-	Limit       int    `form:"limit"`
+	ServiceName *string `form:"service_name,omitempty"`
+	UserID      *string `form:"user_id,omitempty"`
+	Page        int     `form:"page"`
+	Limit       int     `form:"limit"`
+}
+
+type ListSubscriptionResponse struct {
+	Subscriptions []*domain.Subscription `json:"subscriptions"`
 }

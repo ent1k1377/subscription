@@ -45,6 +45,6 @@ func (s *Subscription) DeleteSubscription(uuid uuid.UUID) error {
 	return s.subscriptionRepo.DeleteSubscription(uuid)
 }
 
-func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) {
+func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) ([]*domain.Subscription, error) {
 	return s.subscriptionRepo.ListSubscriptions(params)
 }

@@ -62,9 +62,13 @@ func ToUpdateSubscriptionParams(request *UpdateSubscriptionRequest) *domain.Upda
 }
 
 func ToListSubscriptionParams(request *ListSubscriptionRequest) (*domain.ListSubscriptionParams, error) {
-	userID, err := uuid.Parse(request.UserID)
-	if err != nil {
-		return nil, err
+	var userID *uuid.UUID
+	if request.UserID != nil {
+		id, err := uuid.Parse(*request.UserID)
+		if err != nil {
+			return nil, err
+		}
+		userID = &id
 	}
 
 	return &domain.ListSubscriptionParams{
@@ -73,4 +77,10 @@ func ToListSubscriptionParams(request *ListSubscriptionRequest) (*domain.ListSub
 		Page:        request.Page,
 		Limit:       request.Limit,
 	}, nil
+}
+
+func ToListSubscriptionResponse(subscriptions []*domain.Subscription) *ListSubscriptionResponse {
+	return &ListSubscriptionResponse{
+		Subscriptions: subscriptions,
+	}
 }

@@ -118,7 +118,11 @@ func (h *Handler) ListSubscriptions(ctx *gin.Context) {
 		return
 	}
 
-	h.subscriptionService.ListSubscriptions(params)
+	subscription, err := h.subscriptionService.ListSubscriptions(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to list the subscription "+err.Error()))
+		return
+	}
 
-	ctx.JSON(200, common.ToSuccessfulResponse("list the subscription"))
+	ctx.JSON(200, ToListSubscriptionResponse(subscription))
 }
