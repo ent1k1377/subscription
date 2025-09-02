@@ -3,9 +3,14 @@ package http
 import (
 	"context"
 	"net/http"
-	"subscriptions/internal/transport/http/handler/subscription"
 
+	"github.com/ent1k1377/subscriptions/internal/config"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/handler/subscription"
+
+	"github.com/ent1k1377/subscriptions/docs"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
@@ -14,10 +19,10 @@ type Server struct {
 	subscriptionHandler *subscription.Handler
 }
 
-func NewServer(subscriptionHandler *subscription.Handler) *Server {
+func NewServer(cfg config.ServerConfig, subscriptionHandler *subscription.Handler) *Server {
 	engine := gin.Default()
 	httpServer := &http.Server{
-		Addr:    ":8080", // TODO Добавить Config
+		Addr:    ":" + cfg.Port,
 		Handler: engine,
 	}
 
@@ -39,6 +44,9 @@ func (s *Server) Close(ctx context.Context) error {
 }
 
 func (s *Server) SetRoutes() {
+	docs.SwaggerInfo.BasePath = "/api/"
+	s.engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	api := s.engine.Group("/api/subscriptions")
 	{
 		api.POST("/create", s.subscriptionHandler.Create)

@@ -2,6 +2,9 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/ent1k1377/subscriptions/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -13,16 +16,16 @@ func NewDB(pool *pgxpool.Pool) *DB {
 	return &DB{pool: pool}
 }
 
-func GetConnection() (*pgxpool.Pool, error) {
+func GetConnection(cfg config.DatabaseConfig) (*pgxpool.Pool, error) {
 	ctx := context.Background()
-	dsn := "postgres://user:pass@localhost:5430/db?sslmode=disable" // TODO Добавить cfg
+	dsn := cfg.DSN()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
 
 	if err = pool.Ping(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error pinging database: %w", err)
 	}
 
 	return pool, nil

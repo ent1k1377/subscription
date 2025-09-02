@@ -3,8 +3,9 @@ package subscription
 import (
 	"fmt"
 	"net/http"
-	"subscriptions/internal/service"
-	"subscriptions/internal/transport/http/common"
+
+	"github.com/ent1k1377/subscriptions/internal/service"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/common"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,6 +21,16 @@ func NewHandler(subscriptionService *service.Subscription) *Handler {
 	}
 }
 
+// Create создает запись в бд на основе запроса CreateSubscriptionRequest
+//
+//	@Summary		Создает subscription
+//	@Description	Создает subscription на основе запроса CreateSubscriptionRequest
+//	@Tags			subscription
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		CreateSubscriptionRequest	true	"Subscription data"
+//	@Success		201		{object}	common.SuccessfulResponse	"Successfully created"
+//	@Router			/create [post]
 func (h *Handler) Create(ctx *gin.Context) {
 	var request CreateSubscriptionRequest
 	if err := ctx.ShouldBind(&request); err != nil {

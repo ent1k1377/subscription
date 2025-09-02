@@ -1,0 +1,56 @@
+basePath: /api
+definitions:
+  common.SuccessfulResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  subscription.CreateSubscriptionRequest:
+    properties:
+      end_date:
+        type: string
+      price:
+        type: integer
+      service_name:
+        description: |-
+          Название сервиса
+          Required true
+          Example: Yandex Plus
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for managing user subscriptions
+  title: Subscription API
+  version: "1.0"
+paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: Создает subscription на основе запроса CreateSubscriptionRequest
+      parameters:
+      - description: Subscription data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.CreateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully created
+          schema:
+            $ref: '#/definitions/common.SuccessfulResponse'
+      summary: Создает subscription
+      tags:
+      - subscription
+schemes:
+- http
+swagger: "2.0"

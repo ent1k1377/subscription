@@ -1,8 +1,10 @@
 package subscription
 
 import (
-	"subscriptions/internal/domain"
 	"time"
+
+	"github.com/ent1k1377/subscriptions/internal/domain"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/common"
 
 	"github.com/google/uuid"
 )
@@ -30,10 +32,10 @@ func ToCreateSubscriptionParams(request *CreateSubscriptionRequest) (*domain.Cre
 }
 
 func ToGetSubscriptionResponse(subscription *domain.Subscription) *GetSubscriptionResponse {
-	startDate := MonthYear(subscription.StartDate)
-	var endDate *MonthYear
+	startDate := common.MonthYear(subscription.StartDate)
+	var endDate *common.MonthYear
 	if subscription.EndDate != nil {
-		endTime := MonthYear(*subscription.EndDate)
+		endTime := common.MonthYear(*subscription.EndDate)
 		endDate = &endTime
 	}
 

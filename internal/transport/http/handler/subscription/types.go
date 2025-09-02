@@ -1,54 +1,35 @@
 package subscription
 
 import (
-	"encoding/json"
-	"strings"
-	"subscriptions/internal/domain"
-	"time"
+	"github.com/ent1k1377/subscriptions/internal/domain"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/common"
 )
 
-type MonthYear time.Time
-
-func (my *MonthYear) UnmarshalJSON(b []byte) error {
-	s := strings.Trim(string(b), `"`)
-
-	t, err := time.Parse("01-2006", s)
-	if err != nil {
-		return err
-	}
-
-	*my = MonthYear(t)
-
-	return nil
-}
-
-func (my *MonthYear) MarshalJSON() ([]byte, error) {
-	t := time.Time(*my)
-	formatted := t.Format("01-2006")
-	return json.Marshal(formatted)
-}
-
+// swagger:model CreateSubscriptionRequest
 type CreateSubscriptionRequest struct {
-	ServiceName string     `json:"service_name"`
-	Price       int        `json:"price"`
-	UserID      string     `json:"user_id"`
-	StartDate   MonthYear  `json:"start_date"`
-	EndDate     *MonthYear `json:"end_date,omitempty"`
+	// Название сервиса
+	// Required true
+	// Example: Yandex Plus
+	ServiceName string            `json:"service_name"`
+	Price       int               `json:"price"`
+	UserID      string            `json:"user_id"`
+	StartDate   common.MonthYear  `json:"start_date"`
+	EndDate     *common.MonthYear `json:"end_date,omitempty"`
 }
 
 type GetSubscriptionResponse struct {
-	ID          string     `json:"id"`
-	ServiceName string     `json:"service_name"`
-	Price       int        `json:"price"`
-	UserID      string     `json:"user_id"`
-	StartDate   MonthYear  `json:"start_date"`
-	EndDate     *MonthYear `json:"end_date"`
+	ID          string            `json:"id"`
+	ServiceName string            `json:"service_name"`
+	Price       int               `json:"price"`
+	UserID      string            `json:"user_id"`
+	StartDate   common.MonthYear  `json:"start_date"`
+	EndDate     *common.MonthYear `json:"end_date"`
 }
 
 type UpdateSubscriptionRequest struct {
-	ServiceName string     `json:"service_name"`
-	Price       int        `json:"price"`
-	EndDate     *MonthYear `json:"end_date,omitempty"`
+	ServiceName string            `json:"service_name"`
+	Price       int               `json:"price"`
+	EndDate     *common.MonthYear `json:"end_date,omitempty"`
 }
 
 type ListSubscriptionRequest struct {
@@ -63,8 +44,8 @@ type ListSubscriptionResponse struct {
 }
 
 type TotalCostSubscriptionsRequest struct {
-	ServiceName *string   `json:"service_name"`
-	UserID      *string   `json:"user_id"`
-	StartDate   MonthYear `json:"start_date"`
-	EndDate     MonthYear `json:"end_date"`
+	ServiceName *string          `json:"service_name"`
+	UserID      *string          `json:"user_id"`
+	StartDate   common.MonthYear `json:"start_date"`
+	EndDate     common.MonthYear `json:"end_date"`
 }

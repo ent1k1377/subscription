@@ -1,9 +1,10 @@
 package service
 
 import (
-	"subscriptions/internal/database/postgres/repository"
-	"subscriptions/internal/domain"
 	"time"
+
+	"github.com/ent1k1377/subscriptions/internal/database/postgres/repository"
+	"github.com/ent1k1377/subscriptions/internal/domain"
 
 	"github.com/google/uuid"
 )
