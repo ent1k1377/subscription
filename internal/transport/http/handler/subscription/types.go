@@ -5,16 +5,13 @@ import (
 	"github.com/ent1k1377/subscriptions/internal/transport/http/common"
 )
 
-// swagger:model CreateSubscriptionRequest
+// CreateSubscriptionRequest request структура для создания новой подписки
 type CreateSubscriptionRequest struct {
-	// Название сервиса
-	// Required true
-	// Example: Yandex Plus
-	ServiceName string            `json:"service_name"`
-	Price       int               `json:"price"`
-	UserID      string            `json:"user_id"`
-	StartDate   common.MonthYear  `json:"start_date"`
-	EndDate     *common.MonthYear `json:"end_date,omitempty"`
+	ServiceName string            `json:"service_name" example:"Netflix" binding:"required"`
+	Price       int               `json:"price" example:"999" binding:"required,gte=0"`
+	UserID      string            `json:"user_id" example:"f81d4fae-7dec-11d0-a765-00a0c91e6bf6" binding:"required,uuid"`
+	StartDate   common.MonthYear  `json:"start_date" example:"01-2025" binding:"required"`
+	EndDate     *common.MonthYear `json:"end_date,omitempty" example:"12-2025"`
 }
 
 type GetSubscriptionResponse struct {

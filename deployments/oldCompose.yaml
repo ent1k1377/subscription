@@ -1,0 +1,16 @@
+name: "subscriptions"
+
+volumes:
+  pgdata:
+
+services:
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "5430:5432"
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: "db"
+    volumes:
+      - pgdata:/var/lib/postgresql/data

@@ -1,5 +1,10 @@
 basePath: /api
 definitions:
+  common.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
   common.SuccessfulResponse:
     properties:
       message:
@@ -8,34 +13,76 @@ definitions:
   subscription.CreateSubscriptionRequest:
     properties:
       end_date:
+        example: 12-2025
+        type: string
+      price:
+        example: 999
+        minimum: 0
+        type: integer
+      service_name:
+        example: Netflix
+        type: string
+      start_date:
+        example: 01-2025
+        type: string
+      user_id:
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        type: string
+    required:
+    - price
+    - service_name
+    - start_date
+    - user_id
+    type: object
+  subscription.GetSubscriptionResponse:
+    properties:
+      end_date:
+        type: string
+      id:
         type: string
       price:
         type: integer
       service_name:
-        description: |-
-          Название сервиса
-          Required true
-          Example: Yandex Plus
         type: string
       start_date:
         type: string
       user_id:
         type: string
     type: object
+  subscription.TotalCostSubscriptionsRequest:
+    properties:
+      end_date:
+        type: string
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  subscription.UpdateSubscriptionRequest:
+    properties:
+      end_date:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
-  description: API for managing user subscriptions
+  description: API для управления подписками пользователей
   title: Subscription API
   version: "1.0"
 paths:
-  /create:
+  /subscriptions:
     post:
       consumes:
       - application/json
-      description: Создает subscription на основе запроса CreateSubscriptionRequest
+      description: Создает подписку для пользователя
       parameters:
-      - description: Subscription data
+      - description: Данные подписки
         in: body
         name: request
         required: true
@@ -48,9 +95,197 @@ paths:
           description: Successfully created
           schema:
             $ref: '#/definitions/common.SuccessfulResponse'
-      summary: Создает subscription
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Создает подписку
       tags:
-      - subscription
+      - subscriptions
+  /subscriptions/{uuid}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет подписку по UUID
+      parameters:
+      - description: UUID подписки
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное удаление
+          schema:
+            $ref: '#/definitions/common.SuccessfulResponse'
+        "400":
+          description: Неверный UUID
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Удалить подписку
+      tags:
+      - subscriptions
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о подписке по UUID
+      parameters:
+      - description: UUID подписки
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscription.GetSubscriptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Получить подписку
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о подписке по UUID
+      parameters:
+      - description: UUID подписки
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Данные для обновления подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.UpdateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.SuccessfulResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+  /subscriptions/list:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список подписок с фильтрацией и пагинацией (через query-параметры)
+      parameters:
+      - description: Фильтр по UUID пользователя
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        format: uuid
+        in: query
+        name: user_id
+        type: string
+      - description: Фильтр по названию сервиса
+        example: Netflix
+        in: query
+        name: service
+        type: string
+      - description: Количество записей на странице
+        example: 10
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Смещение для пагинации
+        example: 0
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список подписок
+          schema:
+            items:
+              $ref: '#/definitions/subscription.GetSubscriptionResponse'
+            type: array
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Список подписок
+      tags:
+      - subscriptions
+  /subscriptions/total:
+    post:
+      consumes:
+      - application/json
+      description: Возвращает суммарную стоимость подписок для пользователя (по фильтрам
+        из тела запроса)
+      parameters:
+      - description: Параметры для подсчета стоимости
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.TotalCostSubscriptionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Общая стоимость подписок
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Общая стоимость подписок
+      tags:
+      - subscriptions
 schemes:
 - http
 swagger: "2.0"

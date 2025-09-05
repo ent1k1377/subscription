@@ -15,9 +15,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/create": {
+        "/subscriptions": {
             "post": {
-                "description": "Создает subscription на основе запроса CreateSubscriptionRequest",
+                "description": "Создает подписку для пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,12 +25,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "subscription"
+                    "subscriptions"
                 ],
-                "summary": "Создает subscription",
+                "summary": "Создает подписку",
                 "parameters": [
                     {
-                        "description": "Subscription data",
+                        "description": "Данные подписки",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -45,12 +45,296 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/common.SuccessfulResponse"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/list": {
+            "get": {
+                "description": "Возвращает список подписок с фильтрацией и пагинацией (через query-параметры)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Список подписок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                        "description": "Фильтр по UUID пользователя",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "Netflix",
+                        "description": "Фильтр по названию сервиса",
+                        "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "description": "Количество записей на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
+                        "description": "Смещение для пагинации",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список подписок",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/subscription.GetSubscriptionResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/total": {
+            "post": {
+                "description": "Возвращает суммарную стоимость подписок для пользователя (по фильтрам из тела запроса)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Общая стоимость подписок",
+                "parameters": [
+                    {
+                        "description": "Параметры для подсчета стоимости",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/subscription.TotalCostSubscriptionsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Общая стоимость подписок",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{uuid}": {
+            "get": {
+                "description": "Возвращает информацию о подписке по UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Получить подписку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                        "description": "UUID подписки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscription.GetSubscriptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет информацию о подписке по UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Обновить подписку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                        "description": "UUID подписки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления подписки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/subscription.UpdateSubscriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessfulResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет подписку по UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Удалить подписку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                        "description": "UUID подписки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное удаление",
+                        "schema": {
+                            "$ref": "#/definitions/common.SuccessfulResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный UUID",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "common.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
         "common.SuccessfulResponse": {
             "type": "object",
             "properties": {
@@ -61,6 +345,78 @@ const docTemplate = `{
         },
         "subscription.CreateSubscriptionRequest": {
             "type": "object",
+            "required": [
+                "price",
+                "service_name",
+                "start_date",
+                "user_id"
+            ],
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "example": "12-2025"
+                },
+                "price": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 999
+                },
+                "service_name": {
+                    "type": "string",
+                    "example": "Netflix"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "01-2025"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                }
+            }
+        },
+        "subscription.GetSubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscription.TotalCostSubscriptionsRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscription.UpdateSubscriptionRequest": {
+            "type": "object",
             "properties": {
                 "end_date": {
                     "type": "string"
@@ -69,13 +425,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "service_name": {
-                    "description": "Название сервиса\nRequired true\nExample: Yandex Plus",
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }
@@ -90,7 +439,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{"http"},
 	Title:            "Subscription API",
-	Description:      "API for managing user subscriptions",
+	Description:      "API для управления подписками пользователей",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

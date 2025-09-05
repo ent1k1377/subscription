@@ -25,28 +25,28 @@ type App struct {
 func New() *App {
 	cfg := config.MustLoadConfig()
 
-	logger := setupLogger(cfg.LoggerConfig.Level)
-	slog.SetDefault(logger)
-	logger.Info("Application configuration initialized", slog.Any("cfg", cfg))
-	logger.Info("Initialized application")
+	baseLogger := setupLogger(cfg.LoggerConfig.Level)
+	slog.SetDefault(baseLogger)
+	baseLogger.Info("Application configuration initialized", slog.Any("cfg", cfg))
+	baseLogger.Info("Initialized application")
 
 	pool, err := postgres.GetConnection(cfg.DatabaseConfig)
 	if err != nil {
 		panic(err)
 	}
-	logger.Info("Connecting to database")
+	baseLogger.Info("Successful connection to the database")
 
 	db := postgres.NewDB(pool)
-	subscriptionRepo := repository.NewSubscription(pool)
-	subscriptionService := service.NewSubscription(subscriptionRepo)
-	subscriptionHandler := subscription.NewHandler(subscriptionService)
+	subscriptionRepo := repository.NewSubscription(pool, baseLogger)
+	subscriptionService := service.NewSubscription(baseLogger, subscriptionRepo)
+	subscriptionHandler := subscription.NewHandler(baseLogger, subscriptionService)
 
-	server := myhttp.NewServer(cfg.ServerConfig, subscriptionHandler)
+	server := myhttp.NewServer(cfg.ServerConfig, baseLogger, subscriptionHandler)
 
 	return &App{
 		server: server,
 		db:     db,
-		logger: logger,
+		logger: baseLogger,
 	}
 }
 

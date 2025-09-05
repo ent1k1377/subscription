@@ -20,7 +20,7 @@ func setupLogger(lvl string) *slog.Logger {
 			return a
 		}
 
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug, ReplaceAttr: timeAttr})
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug, ReplaceAttr: timeAttr})
 	case "prod":
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	}

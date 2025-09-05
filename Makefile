@@ -2,6 +2,9 @@
 
 DSN = "postgres://user:pass@localhost:5430/db?sslmode=disable"
 
+build:
+	docker compose -f deployments/compose.yaml --env-file configs/.env build
+
 up:
 	docker compose -f deployments/compose.yaml --env-file configs/.env up
 

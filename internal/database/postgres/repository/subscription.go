@@ -2,26 +2,37 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/ent1k1377/subscriptions/internal/domain"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/middleware"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Subscription struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger *slog.Logger
 }
 
-func NewSubscription(pool *pgxpool.Pool) *Subscription {
-	return &Subscription{pool: pool}
+func NewSubscription(pool *pgxpool.Pool, baseLogger *slog.Logger) *Subscription {
+	logger := baseLogger.WithGroup("subscription repository")
+
+	return &Subscription{
+		pool:   pool,
+		logger: logger,
+	}
 }
 
-func (s *Subscription) CreateSubscription(subscription *domain.Subscription) error {
-	ctx := context.Background()
+func (s *Subscription) CreateSubscription(ctx context.Context, subscription *domain.Subscription) error {
+	logger := s.logger.With(
+		slog.String("request_id", ctx.Value(middleware.RequestIDKey).(string)),
+		slog.String("func", "CreateSubscription"),
+	)
+
 	query := `INSERT INTO subscriptions (id, service_name, price, user_id, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := s.pool.Exec(ctx, query,
 		subscription.UUID.String(),
@@ -33,6 +44,17 @@ func (s *Subscription) CreateSubscription(subscription *domain.Subscription) err
 	)
 
 	if err != nil {
+		logger.Error("db query failed",
+			slog.String("query", "insert subscription"),
+			slog.Any("params", map[string]any{
+				"uuid":         subscription.UUID.String(),
+				"service_name": subscription.ServiceName,
+				"price":        subscription.Price,
+				"user_id":      subscription.UserUUID.String(),
+				"start_date":   subscription.StartDate,
+				"end_date":     subscription.EndDate,
+			}),
+		)
 		return err
 	}
 
@@ -89,7 +111,6 @@ func (s *Subscription) ListSubscriptions(params *domain.ListSubscriptionParams) 
 	defer tx.Rollback(ctx)
 
 	query, args := s.buildListSubscriptionsQuery(params)
-	fmt.Println(query)
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -153,9 +174,8 @@ func (s *Subscription) buildListSubscriptionsQuery(params *domain.ListSubscripti
 func (s *Subscription) TotalCostSubscriptions(params *domain.TotalCostSubscriptionsParams) (int, error) {
 	ctx := context.Background()
 	var totalCost int
-	fmt.Println(params)
 	query, args := s.buildTotalCostSubscriptionsQuery(params)
-	fmt.Println(query)
+
 	err := s.pool.QueryRow(ctx, query, args...).Scan(&totalCost)
 	if err != nil {
 		return 0, err

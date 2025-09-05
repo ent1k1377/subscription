@@ -1,25 +1,34 @@
 package service
 
 import (
+	"context"
+	"log/slog"
 	"time"
 
 	"github.com/ent1k1377/subscriptions/internal/database/postgres/repository"
 	"github.com/ent1k1377/subscriptions/internal/domain"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/middleware"
 
 	"github.com/google/uuid"
 )
 
 type Subscription struct {
+	logger           *slog.Logger
 	subscriptionRepo *repository.Subscription
 }
 
-func NewSubscription(subscriptionRepo *repository.Subscription) *Subscription {
+func NewSubscription(baseLogger *slog.Logger, subscriptionRepo *repository.Subscription) *Subscription {
+	logger := baseLogger.WithGroup("subscription service")
+
 	return &Subscription{
+		logger:           logger,
 		subscriptionRepo: subscriptionRepo,
 	}
 }
 
-func (s *Subscription) CreateSubscription(params *domain.CreateSubscriptionParams) error {
+func (s *Subscription) CreateSubscription(ctx context.Context, params *domain.CreateSubscriptionParams) error {
+	logger := s.logger.With("request_id", ctx.Value(middleware.RequestIDKey).(string))
+
 	subscription := &domain.Subscription{
 		UUID:        uuid.New(),
 		ServiceName: params.ServiceName,
@@ -31,7 +40,24 @@ func (s *Subscription) CreateSubscription(params *domain.CreateSubscriptionParam
 		UpdatedAt:   time.Now(),
 	}
 
-	return s.subscriptionRepo.CreateSubscription(subscription)
+	logger.Info("Creating subscription",
+		slog.Any("user_id", subscription.UserUUID),
+		slog.String("service_name", subscription.ServiceName),
+		slog.Int("price", subscription.Price),
+	)
+
+	err := s.subscriptionRepo.CreateSubscription(ctx, subscription)
+	if err != nil {
+		logger.Error("Failed to create subscription",
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	logger.Info("Finish create subscription",
+		slog.Any("user_id", subscription.UserUUID),
+	)
+	return nil
 }
 
 func (s *Subscription) GetSubscription(uuid uuid.UUID) (*domain.Subscription, error) {

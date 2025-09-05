@@ -1,159 +1,277 @@
 package subscription
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/ent1k1377/subscriptions/internal/service"
 	"github.com/ent1k1377/subscriptions/internal/transport/http/common"
-
+	"github.com/ent1k1377/subscriptions/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type Handler struct {
+	logger              *slog.Logger
 	subscriptionService *service.Subscription
 }
 
-func NewHandler(subscriptionService *service.Subscription) *Handler {
+func NewHandler(baseLogger *slog.Logger, subscriptionService *service.Subscription) *Handler {
+	logger := baseLogger.WithGroup("subscription handler")
+
 	return &Handler{
+		logger:              logger,
 		subscriptionService: subscriptionService,
 	}
 }
 
 // Create создает запись в бд на основе запроса CreateSubscriptionRequest
 //
-//	@Summary		Создает subscription
-//	@Description	Создает subscription на основе запроса CreateSubscriptionRequest
-//	@Tags			subscription
+//	@Summary		Создает подписку
+//	@Description	Создает подписку для пользователя
+//	@Tags			subscriptions
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		CreateSubscriptionRequest	true	"Subscription data"
+//	@Param			request	body		CreateSubscriptionRequest	true	"Данные подписки"
 //	@Success		201		{object}	common.SuccessfulResponse	"Successfully created"
-//	@Router			/create [post]
-func (h *Handler) Create(ctx *gin.Context) {
+//	@Failure		400		{object}	common.ErrorResponse
+//	@Failure		500		{object}	common.ErrorResponse
+//	@Router			/subscriptions [post]
+func (h *Handler) Create(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("request_id", c.MustGet(middleware.RequestIDKey).(string)),
+		slog.String("func", "Create"),
+	)
+
+	logger.Info("Start create subscription")
 	var request CreateSubscriptionRequest
-	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
+	if err := c.ShouldBind(&request); err != nil {
+		logger.Warn("Failed to bind the body", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
 		return
 	}
 
 	if err := ValidateCreateSubscriptionRequest(request); err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse(err.Error()))
+		logger.Warn("Failed to validate the request", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse(err.Error()))
 		return
 	}
 
 	params, err := ToCreateSubscriptionParams(&request)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("subscription is not valid")) // TODO поменять ошибку
+		logger.Warn("Failed to convert the request to create subscription params", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("subscription is not valid")) // TODO поменять ошибку
 		return
 	}
 
-	err = h.subscriptionService.CreateSubscription(params)
+	ct := context.WithValue(c.Request.Context(), middleware.RequestIDKey, c.MustGet(middleware.RequestIDKey).(string))
+	err = h.subscriptionService.CreateSubscription(ct, params)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to create the subscription"))
+		logger.Warn("Failed to create subscription", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to create the subscription"))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, common.ToSuccessfulResponse("created the subscription"))
+	logger.Info("Create subscription successfully")
+	c.JSON(http.StatusCreated, common.ToSuccessfulResponse("created the subscription"))
 }
 
-func (h *Handler) GetSubscription(ctx *gin.Context) {
-	uuidParam := ctx.Param("uuid")
+// GetSubscription возвращает подписку по UUID пользователя
+//
+//	@Summary		Получить подписку
+//	@Description	Возвращает информацию о подписке по UUID
+//	@Tags			subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			uuid	path		string	true	"UUID подписки"	Format(uuid)	Example(f81d4fae-7dec-11d0-a765-00a0c91e6bf6)
+//	@Success		200		{object}	GetSubscriptionResponse
+//	@Failure		400		{object}	common.ErrorResponse
+//	@Failure		500		{object}	common.ErrorResponse
+//	@Router			/subscriptions/{uuid} [get]
+func (h *Handler) GetSubscription(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("func", "GetSubscription"),
+	)
+
+	logger.Info("Start get subscription")
+	uuidParam := c.Param("uuid")
 	uuidParse, err := uuid.Parse(uuidParam)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuidParse is not valid"))
+		logger.Warn("Failed to parse the uuid", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("uuidParse is not valid"))
 		return
 	}
 
 	subscription, err := h.subscriptionService.GetSubscription(uuidParse)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the subscription"))
+		logger.Error("Failed to get subscription", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the subscription"))
 		return
 	}
 
+	logger.Info("Get subscription successfully")
 	response := ToGetSubscriptionResponse(subscription)
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (h *Handler) UpdateSubscription(ctx *gin.Context) {
-	uuidParam := ctx.Param("uuid")
+// UpdateSubscription обновляет данные подписки по UUID
+//
+//	@Summary		Обновить подписку
+//	@Description	Обновляет информацию о подписке по UUID
+//	@Tags			subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			uuid	path		string						true	"UUID подписки"	Format(uuid)	Example(f81d4fae-7dec-11d0-a765-00a0c91e6bf6)
+//	@Param			request	body		UpdateSubscriptionRequest	true	"Данные для обновления подписки"
+//	@Success		200		{object}	common.SuccessfulResponse
+//	@Failure		400		{object}	common.ErrorResponse
+//	@Failure		500		{object}	common.ErrorResponse
+//	@Router			/subscriptions/{uuid} [put]
+func (h *Handler) UpdateSubscription(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("func", "UpdateSubscription"),
+	)
+
+	uuidParam := c.Param("uuid")
 	uuidParse, err := uuid.Parse(uuidParam)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
+		logger.Warn("Failed to parse the uuid", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
 		return
 	}
 
 	var request UpdateSubscriptionRequest
-	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
+	if err := c.ShouldBind(&request); err != nil {
+		logger.Warn("Failed to bind the body", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
 		return
 	}
 
 	params := ToUpdateSubscriptionParams(&request)
 	err = h.subscriptionService.UpdateSubscription(uuidParse, params)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to update the subscription"))
+		logger.Error("Failed to update subscription", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to update the subscription"))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("updated the subscription"))
+	logger.Info("Update subscription successfully")
+	c.JSON(http.StatusOK, common.ToSuccessfulResponse("updated the subscription"))
 }
 
-func (h *Handler) DeleteSubscription(ctx *gin.Context) {
-	uuidParam := ctx.Param("uuid")
+// DeleteSubscription удаляет подписку по UUID
+//
+//	@Summary		Удалить подписку
+//	@Description	Удаляет подписку по UUID
+//	@Tags			subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			uuid	path		string						true	"UUID подписки"	Format(uuid)	Example(f81d4fae-7dec-11d0-a765-00a0c91e6bf6)
+//	@Success		200		{object}	common.SuccessfulResponse	"Успешное удаление"
+//	@Failure		400		{object}	common.ErrorResponse		"Неверный UUID"
+//	@Failure		500		{object}	common.ErrorResponse		"Ошибка сервера"
+//	@Router			/subscriptions/{uuid} [delete]
+func (h *Handler) DeleteSubscription(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("func", "DeleteSubscription"),
+	)
+
+	uuidParam := c.Param("uuid")
 	uuidParse, err := uuid.Parse(uuidParam)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
+		logger.Warn("Failed to parse the uuid", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("uuid is not valid"))
 		return
 	}
 
 	err = h.subscriptionService.DeleteSubscription(uuidParse)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to delete the subscription"))
+		logger.Error("Failed to delete subscription", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to delete the subscription"))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, common.ToSuccessfulResponse("deleted the subscription"))
+	logger.Info("Delete subscription successfully")
+	c.JSON(http.StatusOK, common.ToSuccessfulResponse("deleted the subscription"))
 }
 
-func (h *Handler) ListSubscriptions(ctx *gin.Context) {
+// ListSubscriptions возвращает список подписок с возможностью фильтрации и пагинации
+//
+//	@Summary		Список подписок
+//	@Description	Возвращает список подписок с фильтрацией и пагинацией (через query-параметры)
+//	@Tags			subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		string					false	"Фильтр по UUID пользователя"		Format(uuid)	Example(f81d4fae-7dec-11d0-a765-00a0c91e6bf6)
+//	@Param			service	query		string					false	"Фильтр по названию сервиса"		Example(Netflix)
+//	@Param			limit	query		int						false	"Количество записей на странице"	minimum(1)	maximum(100)	Example(10)
+//	@Param			offset	query		int						false	"Смещение для пагинации"			minimum(0)	Example(0)
+//	@Success		200		{array}		GetSubscriptionResponse	"Список подписок"
+//	@Failure		400		{object}	common.ErrorResponse	"Неверный запрос"
+//	@Failure		500		{object}	common.ErrorResponse	"Ошибка сервера"
+//	@Router			/subscriptions/list [get]
+func (h *Handler) ListSubscriptions(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("func", "ListSubscriptions"),
+	)
+
 	var request ListSubscriptionRequest
-	if err := ctx.ShouldBindQuery(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("query line is not valid"))
+	if err := c.ShouldBindQuery(&request); err != nil {
+		logger.Warn("Failed to bind the body", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("query line is not valid"))
 		return
 	}
 
 	params, err := ToListSubscriptionParams(&request)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("query is not valid"))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("query is not valid"))
 		return
 	}
 
 	subscription, err := h.subscriptionService.ListSubscriptions(params)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to list the subscription "+err.Error()))
+		logger.Error("Failed to list subscriptions", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to list the subscription "+err.Error()))
 		return
 	}
 
-	ctx.JSON(200, ToListSubscriptionResponse(subscription))
+	logger.Info("List subscriptions successfully")
+	c.JSON(200, ToListSubscriptionResponse(subscription))
 }
 
-func (h *Handler) TotalCostSubscriptions(ctx *gin.Context) {
+// TotalCostSubscriptions считает общую стоимость подписок по заданным параметрам
+//
+//	@Summary		Общая стоимость подписок
+//	@Description	Возвращает суммарную стоимость подписок для пользователя (по фильтрам из тела запроса)
+//	@Tags			subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		TotalCostSubscriptionsRequest	true	"Параметры для подсчета стоимости"
+//	@Success		200		{object}	map[string]int					"Общая стоимость подписок"
+//	@Failure		400		{object}	common.ErrorResponse			"Неверный запрос"
+//	@Failure		500		{object}	common.ErrorResponse			"Ошибка сервера"
+//	@Router			/subscriptions/total [post]
+func (h *Handler) TotalCostSubscriptions(c *gin.Context) {
+	logger := h.logger.With(
+		slog.String("func", "ListSubscriptions"),
+	)
+
 	var request TotalCostSubscriptionsRequest
-	if err := ctx.ShouldBindBodyWithJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
+	if err := c.ShouldBindBodyWithJSON(&request); err != nil {
+		logger.Warn("Failed to bind the body", slog.String("error", err.Error()))
+		c.JSON(http.StatusBadRequest, common.ToErrorResponse("json body is not valid"))
 		return
 	}
 
-	fmt.Println(request)
 	params := ToTotalCostSubscriptionsParams(&request)
 	sum, err := h.subscriptionService.TotalCostSubscriptions(params)
 	if err != nil {
-		fmt.Println(err.Error())
-		ctx.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the total cost subscriptions"))
+		logger.Error("Failed to list subscriptions", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ToErrorResponse("failed to get the total cost subscriptions"))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"total": sum})
+	logger.Info("Total cost subscriptions successfully")
+	c.JSON(http.StatusOK, gin.H{"total": sum})
 }

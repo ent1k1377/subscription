@@ -2,10 +2,12 @@ package http
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/ent1k1377/subscriptions/internal/config"
 	"github.com/ent1k1377/subscriptions/internal/transport/http/handler/subscription"
+	"github.com/ent1k1377/subscriptions/internal/transport/http/middleware"
 
 	"github.com/ent1k1377/subscriptions/docs"
 	"github.com/gin-gonic/gin"
@@ -16,19 +18,23 @@ import (
 type Server struct {
 	httpServer          *http.Server
 	engine              *gin.Engine
+	logger              *slog.Logger
 	subscriptionHandler *subscription.Handler
 }
 
-func NewServer(cfg config.ServerConfig, subscriptionHandler *subscription.Handler) *Server {
+func NewServer(cfg config.ServerConfig, baseLogger *slog.Logger, subscriptionHandler *subscription.Handler) *Server {
 	engine := gin.Default()
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.Port,
 		Handler: engine,
 	}
 
+	logger := baseLogger.With("layer", "http")
+
 	return &Server{
 		httpServer:          httpServer,
 		engine:              engine,
+		logger:              logger,
 		subscriptionHandler: subscriptionHandler,
 	}
 }
@@ -44,16 +50,18 @@ func (s *Server) Close(ctx context.Context) error {
 }
 
 func (s *Server) SetRoutes() {
+	s.engine.Use(middleware.RequestID())
+
 	docs.SwaggerInfo.BasePath = "/api/"
 	s.engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := s.engine.Group("/api/subscriptions")
 	{
-		api.POST("/create", s.subscriptionHandler.Create)
+		api.POST("/", s.subscriptionHandler.Create)
 		api.GET("/:uuid", s.subscriptionHandler.GetSubscription)
 		api.PUT("/:uuid", s.subscriptionHandler.UpdateSubscription)
 		api.DELETE("/:uuid", s.subscriptionHandler.DeleteSubscription)
 		api.GET("/list", s.subscriptionHandler.ListSubscriptions)
-		api.GET("/sum", s.subscriptionHandler.TotalCostSubscriptions)
+		api.POST("/total", s.subscriptionHandler.TotalCostSubscriptions)
 	}
 }

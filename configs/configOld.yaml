@@ -1,0 +1,11 @@
+database:
+  host: localhost
+  port: 5430
+  dbname: db
+  sslmode: disable
+
+server:
+  port: 8081
+
+logger:
+  level: dev

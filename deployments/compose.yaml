@@ -1,16 +1,44 @@
-name: "subscriptions"
-
-volumes:
-  pgdata:
-
 services:
-  db:
-    image: postgres:17-alpine
-    ports:
-      - "5430:5432"
+  postgres:
+    image: postgres:15
+    container_name: subscription_db
     environment:
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: "db"
+      POSTGRES_DB: subscription_db
+    ports:
+      - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d subscription_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - subscription-network
+
+  app:
+    build:
+      context: ..
+      dockerfile: deployments/app/Dockerfile
+    container_name: subscription_app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../:/app:rw
+    environment:
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - subscription-network
+
+volumes:
+  postgres_data:
+
+networks:
+  subscription-network:
+    driver: bridge

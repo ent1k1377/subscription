@@ -1,11 +1,11 @@
 database:
-  host: localhost
-  port: 5430
-  dbname: db
+  host: postgres
+  port: 5432
+  dbname: subscription_db
   sslmode: disable
 
 server:
-  port: 8081
+  port: 8080
 
 logger:
   level: dev
